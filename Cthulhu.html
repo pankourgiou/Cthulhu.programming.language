@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Cthulhu REPL</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+body {
+    margin: 0;
+    font-family: 'Share Tech Mono', monospace;
+    background: radial-gradient(circle at center, #0a0a0a 0%, #0f0c29 100%);
+    color: #7fff00;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+header {
+    text-align: center;
+    padding: 20px;
+    font-size: 1.5em;
+    color: #7fff00;
+    text-shadow: 0 0 10px #7fff00, 0 0 20px #00ffea;
+}
+
+#terminal {
+    flex: 1;
+    padding: 20px;
+    margin: 10px;
+    border-radius: 10px;
+    background: rgba(0,0,0,0.8);
+    box-shadow: 0 0 20px #7fff00 inset, 0 0 30px #00ffea inset;
+    overflow-y: auto;
+    white-space: pre-wrap;
+}
+
+#input-line {
+    display: flex;
+    padding: 10px 20px;
+    background: rgba(0,0,0,0.9);
+    border-top: 2px solid #7fff00;
+}
+
+#prompt {
+    margin-right: 10px;
+    color: #7fff00;
+}
+
+#command {
+    flex: 1;
+    background: rgba(0,0,0,0.95);
+    border: none;
+    color: #7fff00;
+    font-family: monospace;
+    font-size: 1em;
+    outline: none;
+    padding: 5px 10px;
+    border-radius: 5px;
+}
+
+button {
+    margin-left: 10px;
+    padding: 5px 10px;
+    background: #7fff00;
+    color: #0a0a0a;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: monospace;
+    font-weight: bold;
+    transition: 0.2s;
+}
+
+button:hover {
+    background: #00ffea;
+    box-shadow: 0 0 10px #7fff00, 0 0 20px #00ffea;
+}
+
+footer {
+    text-align: center;
+    padding: 10px;
+    font-size: 0.9em;
+    color: #7fff00;
+    text-shadow: 0 0 5px #7fff00;
+}
+</style>
+</head>
+<body>
+
+<header>🦑 Cthulhu REPL</header>
+
+<div id="terminal"></div>
+
+<div id="input-line">
+<span id="prompt">cthulhu&gt;</span>
+<input type="text" id="command" placeholder="Type a ritual..." autofocus autocomplete="off">
+<button onclick="showHelp()">Help</button>
+<button onclick="showExamples()">Examples</button>
+<button onclick="clearTerminal()">Clear</button>
+<button onclick="exitREPL()">Exit</button>
+</div>
+
+<footer>Invoke commands wisely... the Old Ones are watching ✨</footer>
+
+<script>
+const terminal = document.getElementById("terminal");
+const commandInput = document.getElementById("command");
+
+let variables = {};
+let history = [];
+let histIndex = 0;
+
+// Eldritch AI
+function evalExpr(expr) {
+    expr = expr.trim();
+    if (variables[expr] !== undefined) return variables[expr];
+    try { return eval(expr, {}, variables); } catch { return expr; }
+}
+
+// Print to terminal
+function print(text) {
+    terminal.innerText += text + "\n";
+    terminal.scrollTop = terminal.scrollHeight;
+}
+
+// Interpreter logic
+function interpret(line) {
+    line = line.trim();
+    if (!line) return;
+
+    history.push(line);
+    histIndex = history.length;
+
+    if (line.toLowerCase() === "help") { return print(helpText()); }
+    if (line.toLowerCase() === "examples") { return print(examplesText()); }
+    if (line.toLowerCase() === "exit" || line.toLowerCase() === "quit") { return exitREPL(); }
+    if (line === "madness") {
+        return print(Object.keys(variables).length ? 
+            "Madness reveals: " + Object.entries(variables).map(([k,v])=>`${k}=${v}`).join(", ") :
+            "Madness reveals... nothing.");
+    }
+
+    if (line.startsWith("summon")) {
+        const m = line.match(/^summon\s+(\w+)\s*=\s*(.+)$/);
+        if (m) {
+            const [_, name, expr] = m;
+            variables[name] = evalExpr(expr);
+            return print(`${name} awakened as ${variables[name]}`);
+        }
+    }
+
+    if (line.startsWith("chant")) {
+        const val = evalExpr(line.slice(5));
+        return print(val);
+    }
+
+    if (line.startsWith("fuse")) {
+        const parts = line.split(" ");
+        if (parts.length === 3) {
+            const va = evalExpr(parts[1]), vb = evalExpr(parts[2]);
+            return print(`The fusion is ${va}${vb}`);
+        }
+    }
+
+    if (line.startsWith("banish")) {
+        const varName = line.split(" ")[1];
+        if (variables[varName] !== undefined) { delete variables[varName]; return print(`${varName} has been banished to the void`); }
+        return print(`${varName} was never summoned`);
+    }
+
+    if (line.startsWith("whisper")) {
+        const val = String(evalExpr(line.slice(7)));
+        const scrambled = val.split("").sort(()=>0.5-Math.random()).join("");
+        return print(`(whisper) ${scrambled}`);
+    }
+
+    if (line.startsWith("dream")) {
+        const val = evalExpr(line.slice(5));
+        if (typeof val === "number") return print(`In dream, ${val} becomes ${val**2} or maybe ${val*13}`);
+        if (typeof val === "string") return print(`In dream, '${val}' is written backwards as '${val.split("").reverse().join("")}'`);
+        return print(`The dream distorts ${val}`);
+    }
+
+    if (line.startsWith("ritual")) {
+        const parts = line.split(" ");
+        if (parts.length === 3) {
+            const a = evalExpr(parts[1]), b = evalExpr(parts[2]);
+            if (typeof a === "number" && typeof b === "number") return print(`Ritual binds them: ${a*b + Math.floor(Math.random()*11-5)}`);
+            const s = String(a)+String(b);
+            const scrambled = s.split("").sort(()=>0.5-Math.random()).join("");
+            return print(`Ritual scrambles them into: ${scrambled}`);
+        }
+    }
+
+    return print(`The Old Ones do not understand: ${line}`);
+}
+
+function helpText() {
+    return `📜 *The Expanded Cthulhu Scrolls* 📜
+summon <name> = <expr>   → awaken a variable
+chant <expr>             → speak its value aloud
+fuse <a> <b>             → merge two horrors into one
+banish <name>            → forget a variable
+whisper <expr>           → speak scrambled secrets
+dream <expr>             → distort a value in dream logic
+madness                  → list all known variables
+ritual <a> <b>           → perform a strange binding
+help                     → show this scroll
+quit / exit              → escape the abyss`;
+}
+
+const examplesText = `
+Examples:
+summon x = 13
+chant x
+dream x
+whisper "Shub-Niggurath"
+ritual 4 7
+madness
+`;
+
+commandInput.addEventListener("keydown", function(e){
+    if(e.key==="Enter") { print("cthulhu> "+commandInput.value); interpret(commandInput.value); commandInput.value=""; }
+    if(e.key==="ArrowUp") { histIndex=Math.max(histIndex-1,0); commandInput.value=history[histIndex]||""; }
+    if(e.key==="ArrowDown") { histIndex=Math.min(histIndex+1,history.length); commandInput.value=history[histIndex]||""; }
+});
+
+// Buttons
+function showHelp(){ print(helpText()); }
+function showExamples(){ print(examplesText); }
+function clearTerminal(){ terminal.innerText=""; }
+function exitREPL(){ print("The void closes."); commandInput.disabled=true; }
+
+// Startup
+print("🐙 Welcome to the Cthulhu REPL. Type 'help' for guidance, 'quit' to escape.");
+</script>
+
+</body>
+</html>
